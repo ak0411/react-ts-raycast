@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { SCREEN_WIDTH, SCREEN_HEIGHT } from './constants';
 import { useGame } from './hooks/useGame';
 import { useRenderer } from './hooks/useRenderer';
+import './styles.css';
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,12 +31,9 @@ const App: React.FC = () => {
   }, [drawMap2D, drawPlayer2D, drawRays2D, handleKeyDown, player]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={SCREEN_WIDTH}
-      height={SCREEN_HEIGHT}
-      style={{ backgroundColor: 'grey' }}
-    />
+    <div className='container'>
+      <canvas ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} />
+    </div>
   );
 };
 
