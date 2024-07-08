@@ -15,6 +15,7 @@ import {
   START_DIR_X,
   START_PLANE_X,
   START_PLANE_Y,
+  RAYS,
 } from './constants';
 
 const drawMap2D = (ctx: CanvasRenderingContext2D) => {
@@ -41,6 +42,88 @@ const drawCaster2D = (ctx: CanvasRenderingContext2D, caster: Caster) => {
     caster.pos.y + caster.dir.y * 15
   );
   ctx.stroke();
+};
+
+const drawRays2D = (
+  ctx: CanvasRenderingContext2D,
+  caster: Caster,
+  w: number
+) => {
+  if (w < 1) return;
+
+  const { pos, dir, plane } = caster;
+
+  for (let x = 0; x < w; x++) {
+    // Calculate ray position and direction
+    const cameraX = (2 * x) / w - 1;
+    const rayDirX = dir.x + plane.x * cameraX;
+    const rayDirY = dir.y + plane.y * cameraX;
+
+    // Which box of the map we're in
+    let mapX = Math.floor(pos.x / MAP_SCALE);
+    let mapY = Math.floor(pos.y / MAP_SCALE);
+
+    // Length of ray from one x or y-side to next x or y-side
+    const deltaDistX = Math.abs(1 / rayDirX);
+    const deltaDistY = Math.abs(1 / rayDirY);
+
+    // Calculate step and initial sideDist
+    let stepX: number;
+    let stepY: number;
+    let sideDistX: number;
+    let sideDistY: number;
+
+    if (rayDirX < 0) {
+      stepX = -1;
+      sideDistX = (pos.x / MAP_SCALE - mapX) * deltaDistX;
+    } else {
+      stepX = 1;
+      sideDistX = (mapX + 1.0 - pos.x / MAP_SCALE) * deltaDistX;
+    }
+    if (rayDirY < 0) {
+      stepY = -1;
+      sideDistY = (pos.y / MAP_SCALE - mapY) * deltaDistY;
+    } else {
+      stepY = 1;
+      sideDistY = (mapY + 1.0 - pos.y / MAP_SCALE) * deltaDistY;
+    }
+
+    // Perform DDA
+    let hit = 0;
+    let side = 0;
+    while (hit == 0) {
+      // Jump to next map square, either in x-direction, or in y-direction
+      if (sideDistX < sideDistY) {
+        sideDistX += deltaDistX;
+        mapX += stepX;
+        side = 0;
+      } else {
+        sideDistY += deltaDistY;
+        mapY += stepY;
+        side = 1;
+      }
+      // Check if ray has hit a wall
+      if (MAP[mapY][mapX] > 0) hit = 1;
+    }
+
+    // Calculate distance projected on camera direction
+    let perpWallDist: number;
+    if (side == 0) {
+      perpWallDist = (mapX - pos.x / MAP_SCALE + (1 - stepX) / 2) / rayDirX;
+    } else {
+      perpWallDist = (mapY - pos.y / MAP_SCALE + (1 - stepY) / 2) / rayDirY;
+    }
+
+    // Draw the ray
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    const rayEndX = pos.x + rayDirX * perpWallDist * MAP_SCALE;
+    const rayEndY = pos.y + rayDirY * perpWallDist * MAP_SCALE;
+    ctx.lineTo(rayEndX, rayEndY);
+    ctx.strokeStyle = side == 1 ? '#9200007d' : '#50000096';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 };
 
 const isCollision = (x: number, y: number): boolean => {
@@ -156,6 +239,7 @@ const App: React.FC = () => {
         context.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT); // clear canvas
         drawMap2D(context);
         drawCaster2D(context, casterRef.current);
+        drawRays2D(context, casterRef.current, RAYS);
 
         animationFrameId = window.requestAnimationFrame(render);
       };

@@ -26,3 +26,4 @@ export const START_PLANE_X = 0;
 export const START_PLANE_Y = 0.66;
 export const MOVE_SPEED = MAP_SCALE * 1; // squares per second
 export const ROTATION_SPEED = 3; // radians per second;
+export const RAYS = 60;
