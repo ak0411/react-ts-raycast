@@ -6,6 +6,7 @@ body {
 .container {
   display: flex;
   gap: 16px;
+  justify-content: center;
 }
 
 .fps-counter {

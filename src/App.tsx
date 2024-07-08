@@ -52,6 +52,8 @@ const drawRays2D = (
   if (w < 1) return;
 
   const { pos, dir, plane } = caster;
+  const view3DWidth = SCREEN_WIDTH - MAP_WIDTH * MAP_SCALE;
+  const stripWidth = view3DWidth / w;
 
   for (let x = 0; x < w; x++) {
     // Calculate ray position and direction
@@ -141,6 +143,28 @@ const drawRays2D = (
     ctx.strokeStyle = side == 1 ? '#9200007d' : '#50000096';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    // Calculate height of line to draw on screen
+    const lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist);
+
+    // Calculate lowest and highest pixel to fill in current stripe
+    let drawStart = -lineHeight / 2 + SCREEN_HEIGHT / 2;
+    if (drawStart < 0) drawStart = 0;
+    let drawEnd = lineHeight / 2 + SCREEN_HEIGHT / 2;
+    if (drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT - 1;
+
+    // Calculate the x-coordinate for the 3D view
+    const view3DX =
+      MAP_WIDTH * MAP_SCALE + ((w - 1 - x) / (w - 1)) * view3DWidth;
+
+    // Draw a filled rectangle for the wall strip
+    ctx.fillStyle = side === 1 ? '#555555' : '#888888';
+    ctx.fillRect(view3DX, drawStart, stripWidth, drawEnd - drawStart);
+
+    // Add simple shading based on distance
+    const shade = Math.min(1, 1 - perpWallDist / 10); // Adjust divisor for shading intensity
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - shade})`;
+    ctx.fillRect(view3DX, drawStart, stripWidth, drawEnd - drawStart);
   }
 };
 

@@ -15,7 +15,7 @@ export const MAP_WIDTH = 10;
 export const MAP_HEIGHT = 10;
 export const MAP_SCALE = 64;
 
-export const SCREEN_WIDTH = 640;
+export const SCREEN_WIDTH = 1280;
 export const SCREEN_HEIGHT = 640;
 
 export const START_POS_X = MAP_SCALE * 4;
@@ -26,4 +26,4 @@ export const START_PLANE_X = 0;
 export const START_PLANE_Y = 0.66;
 export const MOVE_SPEED = MAP_SCALE * 1; // squares per second
 export const ROTATION_SPEED = 3; // radians per second;
-export const RAYS = 60;
+export const RAYS = 128;
