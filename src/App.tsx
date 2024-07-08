@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Caster, Vector2D } from './types';
+import { Caster, Ray, Vector2D } from './types';
 import {
   MAP,
   MAP_HEIGHT,
@@ -22,7 +22,7 @@ const drawMap2D = (ctx: CanvasRenderingContext2D) => {
   for (let y = 0; y < MAP_HEIGHT; y++) {
     for (let x = 0; x < MAP_WIDTH; x++) {
       ctx.fillStyle = MAP[y][x] === 1 ? '#182634' : '#060b11';
-      ctx.fillRect(x * MAP_SCALE, y * MAP_SCALE, MAP_SCALE - 1, MAP_SCALE - 1);
+      ctx.fillRect(x * MAP_SCALE, y * MAP_SCALE, MAP_SCALE, MAP_SCALE);
     }
   }
 };
@@ -56,36 +56,54 @@ const drawRays2D = (
   for (let x = 0; x < w; x++) {
     // Calculate ray position and direction
     const cameraX = (2 * x) / w - 1;
-    const rayDirX = dir.x + plane.x * cameraX;
-    const rayDirY = dir.y + plane.y * cameraX;
+    const ray: Ray = {
+      dir: {
+        x: dir.x + plane.x * cameraX,
+        y: dir.y + plane.y * cameraX,
+      },
+      sideDist: {
+        x: 0,
+        y: 0,
+      },
+      deltaDist: {
+        x: 0,
+        y: 0,
+      },
+      end: {
+        x: 0,
+        y: 0,
+      },
+    };
 
     // Which box of the map we're in
-    let mapX = Math.floor(pos.x / MAP_SCALE);
-    let mapY = Math.floor(pos.y / MAP_SCALE);
+    const map: Vector2D = {
+      x: Math.floor(pos.x / MAP_SCALE),
+      y: Math.floor(pos.y / MAP_SCALE),
+    };
 
     // Length of ray from one x or y-side to next x or y-side
-    const deltaDistX = Math.abs(1 / rayDirX);
-    const deltaDistY = Math.abs(1 / rayDirY);
+    ray.deltaDist.x = Math.abs(1 / ray.dir.x);
+    ray.deltaDist.y = Math.abs(1 / ray.dir.y);
 
-    // Calculate step and initial sideDist
-    let stepX: number;
-    let stepY: number;
-    let sideDistX: number;
-    let sideDistY: number;
+    const step: Vector2D = {
+      x: 0,
+      y: 0,
+    };
 
-    if (rayDirX < 0) {
-      stepX = -1;
-      sideDistX = (pos.x / MAP_SCALE - mapX) * deltaDistX;
+    //calculate step and initial sideDist
+    if (ray.dir.x < 0) {
+      step.x = -1;
+      ray.sideDist.x = (pos.x / MAP_SCALE - map.x) * ray.deltaDist.x;
     } else {
-      stepX = 1;
-      sideDistX = (mapX + 1.0 - pos.x / MAP_SCALE) * deltaDistX;
+      step.x = 1;
+      ray.sideDist.x = (map.x + 1.0 - pos.x / MAP_SCALE) * ray.deltaDist.x;
     }
-    if (rayDirY < 0) {
-      stepY = -1;
-      sideDistY = (pos.y / MAP_SCALE - mapY) * deltaDistY;
+    if (ray.dir.y < 0) {
+      step.y = -1;
+      ray.sideDist.y = (pos.y / MAP_SCALE - map.y) * ray.deltaDist.y;
     } else {
-      stepY = 1;
-      sideDistY = (mapY + 1.0 - pos.y / MAP_SCALE) * deltaDistY;
+      step.y = 1;
+      ray.sideDist.y = (map.y + 1.0 - pos.y / MAP_SCALE) * ray.deltaDist.y;
     }
 
     // Perform DDA
@@ -93,33 +111,33 @@ const drawRays2D = (
     let side = 0;
     while (hit == 0) {
       // Jump to next map square, either in x-direction, or in y-direction
-      if (sideDistX < sideDistY) {
-        sideDistX += deltaDistX;
-        mapX += stepX;
+      if (ray.sideDist.x < ray.sideDist.y) {
+        ray.sideDist.x += ray.deltaDist.x;
+        map.x += step.x;
         side = 0;
       } else {
-        sideDistY += deltaDistY;
-        mapY += stepY;
+        ray.sideDist.y += ray.deltaDist.y;
+        map.y += step.y;
         side = 1;
       }
       // Check if ray has hit a wall
-      if (MAP[mapY][mapX] > 0) hit = 1;
+      if (MAP[map.y][map.x] > 0) hit = 1;
     }
 
     // Calculate distance projected on camera direction
     let perpWallDist: number;
     if (side == 0) {
-      perpWallDist = (mapX - pos.x / MAP_SCALE + (1 - stepX) / 2) / rayDirX;
+      perpWallDist = (map.x - pos.x / MAP_SCALE + (1 - step.x) / 2) / ray.dir.x;
     } else {
-      perpWallDist = (mapY - pos.y / MAP_SCALE + (1 - stepY) / 2) / rayDirY;
+      perpWallDist = (map.y - pos.y / MAP_SCALE + (1 - step.y) / 2) / ray.dir.y;
     }
 
     // Draw the ray
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
-    const rayEndX = pos.x + rayDirX * perpWallDist * MAP_SCALE;
-    const rayEndY = pos.y + rayDirY * perpWallDist * MAP_SCALE;
-    ctx.lineTo(rayEndX, rayEndY);
+    ray.end.x = pos.x + ray.dir.x * perpWallDist * MAP_SCALE;
+    ray.end.y = pos.y + ray.dir.y * perpWallDist * MAP_SCALE;
+    ctx.lineTo(ray.end.x, ray.end.y);
     ctx.strokeStyle = side == 1 ? '#9200007d' : '#50000096';
     ctx.lineWidth = 1;
     ctx.stroke();
