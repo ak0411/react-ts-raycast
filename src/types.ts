@@ -1,4 +1,4 @@
-type Vector2D = {
+export type Vector2D = {
   x: number;
   y: number;
 };
@@ -6,5 +6,5 @@ type Vector2D = {
 export type Caster = {
   pos: Vector2D;
   dir: Vector2D;
-  angle: number;
+  plane: Vector2D;
 };
